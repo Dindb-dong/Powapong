@@ -1,0 +1,48 @@
+# Unity 기본
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+
+# VSCode, JetBrains 등 IDE 설정
+.vscode/
+.idea/
+*.sln
+*.csproj
+*.user
+*.unityproj
+
+# OS/툴 임시파일
+.DS_Store
+*.swp
+
+# 유니티 Asset/Meta/Scene/Prefab 등은 추적 필요 (Assets/는 제외)
+# 아래는 필요시 추가
+# [Aa]ssets/AssetStoreTools*
+
+# 빌드 결과물
+*.apk
+*.aab
+*.ipa
+*.exe
+
+# Crash/Profiler/디버그 로그
+*.stacktrace
+*.log
+
+# 기타 유니티 패키지 캐시
+Packages/packages-lock.json
+
+# (선택) 개인적 빌드/테스트 산출물
+*.pidb
+*.mdb
+*.opendb
+*.VC.db
+*.pidb.meta
+*.pdb
+*.mdb
+*.svd
