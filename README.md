@@ -1,9 +1,11 @@
-# Powapong
+# Powapong (Flutter Edition)
 
 **Powapong은** 포아미를 비롯한 귀여운 동물 친구들과 함께 퍼즐을 풀고 적을 물리치는 *모험형 퍼즐 RPG 게임*입니다.
+
 핑크톤의 아기자기한 UI, 캐릭터 수집, 성장, 아이템 사용 등 다양한 RPG 요소가 결합된 모바일 게임입니다.
 
 ![Main Screenshot](./screenshots/main_screen.png)
+
 ![Inventory Screenshot](./screenshots/inventory_screen.png)
 
 ---
@@ -11,7 +13,7 @@
 ## 🎮 게임 소개
 
 - **장르**: 퍼즐 기반 캐주얼 RPG
-- **플랫폼**: Android / iOS
+- **플랫폼**: Android / iOS (Flutter 기반)
 - **그래픽 스타일**: 핑크톤, 감성적이고 귀여운 디자인
 - **주요 콘텐츠**:
   - 매치 퍼즐과 연동된 실시간 전투
@@ -29,7 +31,7 @@
 | 퍼즐 보드 시스템 | 매치-3 퍼즐 기반 전투                                                                   |
 | RPG 전투         | 속성, 스킬, HP 등 전투 계산                                                             |
 | 인벤토리 시스템  | 아이템 획득, 장착, 필터링 UI                                                            |
-| 캐릭터 성장      | 경험치, 진화, 스킬 강화 시스템                                                          |
+| 캐릭터 성장      | 경험치, 특성, 스킬 강화 시스템                                                          |
 | UI/UX 디자인     | 부드러운 색상 기반의 직관적 인터페이스                                                  |
 | QR 기능          | QR 코드로 아이템 수집 가능                                                              |
 | 추첨 기능        | 매주 각 리그마다 특정 스코어를 달성한 인원 중 일부에<br />포와포와의 건강기능식품 증정! |
@@ -38,44 +40,45 @@
 
 ## 🛠 기술 스택
 
-| 영역                     | 스택                                 |
-| ------------------------ | ------------------------------------ |
-| **엔진**                 | Unity (2022.3.48f1 LTS)              |
-| **스크립트 언어**        | C#                                   |
-| **UI 시스템**            | Unity UI (Canvas, TMP, Button 등)    |
-| **애니메이션**           | Animator, DOTween                    |
-| **데이터 관리**          | ScriptableObject, JSON               |
-| **저장소**               | PlayerPrefs / Local Storage          |
-| **오디오**               | AudioSource, AudioMixer              |
-| **클라우드 연동 (예정)** | Firebase                             |
-| **출시 플랫폼**          | Android / iOS (Unity Build Pipeline) |
+| 영역                     | 스택                                     |
+| ------------------------ | ---------------------------------------- |
+| **프레임워크**           | Flutter (3.x 이상)                       |
+| **언어**                 | Dart                                     |
+| **UI 시스템**            | Flutter 위젯, CustomPainter, 패키지 활용 |
+| **상태 관리**            | Provider, Riverpod, Bloc 등              |
+| **애니메이션**           | Flutter Animation, Rive, Lottie          |
+| **데이터 관리**          | JSON, SharedPreferences, SQLite          |
+| **오디오**               | audioplayers, just_audio 등              |
+| **클라우드 연동 (예정)** | Firebase, Google Cloud                   |
+| **출시 플랫폼**          | Android / iOS (Flutter build, CI/CD)     |
 
 ---
 
-## 📁 프로젝트 구조
+## 📁 프로젝트 구조 (예시)
 
 ```plaintext
-Assets/
-├── Scripts/               # 게임 로직 스크립트 폴더
-│   ├── Puzzle/            # 퍼즐 매칭, 이동, 연쇄 관련 스크립트
-│   ├── Battle/            # 전투 연산, 데미지 계산, 턴 처리 등
-│   ├── Character/         # 캐릭터/몬스터 정보, 성장, 스킬
-│   └── UI/                # 인벤토리, 버튼, 화면 전환 등 UI 관련 스크립트
-│
-├── Prefabs/               # 재사용 가능한 프리팹 오브젝트
-├── Art/                   # 이미지, 스프라이트, 배경, 아이콘 등
-├── Audio/                 # 배경음악(BGM), 효과음(SFX)
-├── Resources/             # 런타임 로딩용 리소스 (JSON, 텍스트 등)
-└── Scenes/                # Unity 씬 파일 (메인화면, 인벤토리, 전투 등)
+lib/
+├── main.dart                # 앱 진입점
+├── screens/                 # 주요 화면 (메인, 인벤토리, 전투 등)
+├── widgets/                 # 공통 위젯, 커스텀 UI 컴포넌트
+├── models/                  # 데이터 모델 (캐릭터, 아이템 등)
+├── providers/               # 상태 관리 (Provider/Riverpod 등)
+├── services/                # 데이터, 네트워크, 오디오 등 서비스
+├── assets/                  # 이미지, 사운드, 폰트 등 리소스
+└── utils/                   # 유틸리티 함수, 헬퍼
 ```
+
+---
 
 ## 🚀 출시 계획
 
 1. **MVP 개발중** (퍼즐 + 전투 + 기본 UI)
-2. **실기기 테스트 (Android/iOS)**
+2. **실기기 테스트 (Android/iOS, 에뮬레이터 및 실기기)**
 3. **스토어 준비 및 심사**
 4. **Google Play / App Store 출시**
 5. **정기 업데이트: 스테이지 추가, 이벤트, 아이템 확장 등**
+
+---
 
 ## 📝 라이선스
 
