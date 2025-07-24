@@ -1,48 +1,58 @@
-# Unity 기본
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Mm]emoryCaptures/
-UserSettings/
+# Flutter/Dart 기본
+.dart_tool/
+.packages
+.pub/
+build/
 
-# VSCode, JetBrains 등 IDE 설정
-.vscode/
-.idea/
-*.sln
-*.csproj
-*.user
-*.unityproj
+# Android
+android/.gradle/
+android/captures/
+android/app/debug/
+android/app/profile/
+android/app/release/
+*.jks
 
-# OS/툴 임시파일
+# iOS
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Pods/
+ios/Runner.xcworkspace
+ios/build/
+*.xcuserstate
+*.xcworkspace
+*.xcuserdatad
+*.lock
+
+# Web
+web/.dart_tool/
+web/build/
+
+# macOS
+macos/Flutter/ephemeral/
+macos/build/
+
+# Windows
+windows/Flutter/ephemeral/
+windows/build/
+
+# Linux
+linux/Flutter/ephemeral/
+linux/build/
+
+# 기타 에디터/OS 임시파일
 .DS_Store
+.idea/
+.vscode/
+*.iml
 *.swp
 
-# 유니티 Asset/Meta/Scene/Prefab 등은 추적 필요 (Assets/는 제외)
-# 아래는 필요시 추가
-# [Aa]ssets/AssetStoreTools*
-
-# 빌드 결과물
-*.apk
-*.aab
-*.ipa
-*.exe
-
-# Crash/Profiler/디버그 로그
-*.stacktrace
+# 기타
 *.log
+*.tmp
+*.bak
 
-# 기타 유니티 패키지 캐시
-Packages/packages-lock.json
-
-# (선택) 개인적 빌드/테스트 산출물
-*.pidb
-*.mdb
-*.opendb
-*.VC.db
-*.pidb.meta
-*.pdb
-*.mdb
-*.svd
+# pubspec.lock (패키지 버전 고정 필요 없을 때만)
+# pubspec.lock
