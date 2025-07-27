@@ -64,47 +64,51 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       // 앱 전체 배경은 흰색, 하단 탭만 핑크
       body: _pages[_selectedIndex],
-      bottomNavigationBar: Container(
-        color: kTabBg,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(_iconPaths.length, (index) {
-            final isActive = _selectedIndex == index;
-            final double iconSize = isActive ? 48 : 40; // 활성 탭 아이콘 확대
-            return GestureDetector(
-              onTap: () => _onItemTapped(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.ease,
-                decoration: isActive
-                    ? BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.10),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      )
-                    : null,
-                padding: const EdgeInsets.all(14),
-                child: Image.asset(
-                  _iconPaths[index],
-                  width: iconSize,
-                  height: iconSize,
-                  color: isActive
-                      ? kTabIconActive
-                      : kTabIcon.withValues(alpha: 0.4),
+      bottomNavigationBar: SizedBox(
+        height: screenHeight * 0.1, // 화면 높이의 10%만 차지
+        child: Container(
+          color: kTabBg,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(_iconPaths.length, (index) {
+              final isActive = _selectedIndex == index;
+              final double iconSize = isActive ? 64 : 48; // 아이콘 크기 증가
+              return GestureDetector(
+                onTap: () => _onItemTapped(index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.ease,
+                  decoration: isActive
+                      ? BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.10),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        )
+                      : null,
+                  padding: const EdgeInsets.all(12),
+                  child: Image.asset(
+                    _iconPaths[index],
+                    width: iconSize,
+                    height: iconSize,
+                    color: isActive
+                        ? kTabIconActive
+                        : kTabIcon.withValues(alpha: 0.4),
+                  ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
+          ),
         ),
       ),
     );
