@@ -4,7 +4,7 @@ import 'screens/inventory_screen.dart';
 import 'screens/shop_screen.dart';
 import 'screens/puzzle_screen.dart';
 import 'screens/friend_screen.dart';
-import 'screens/pet_screen.dart';
+import 'screens/character_screen.dart';
 import 'widgets/bottom_navigation.dart';
 
 void main() {
@@ -51,7 +51,7 @@ class _MainScreenState extends State<MainScreen> {
     const ShopScreen(),
     const PuzzleScreen(),
     const FriendScreen(),
-    const PetScreen(),
+    const CharacterScreen(),
   ];
 
   void _onItemTapped(int index) {

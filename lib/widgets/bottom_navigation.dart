@@ -19,7 +19,7 @@ class BottomNavigation extends StatelessWidget {
     'lib/assets/icons/icon_shop.png',
     'lib/assets/icons/icon_puzzle.png',
     'lib/assets/icons/icon_friend.png',
-    'lib/assets/icons/icon_pet.png',
+    'lib/assets/icons/icon_pet.png', // 임시로 pet 아이콘 사용
   ];
 
   static const List<String> _tabLabels = [
