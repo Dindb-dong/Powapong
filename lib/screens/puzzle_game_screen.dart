@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flame/particles.dart';
 import 'package:flame/effects.dart';
 import 'dart:math';
+import '../widgets/puzzle_battle_area.dart';
 
 // 12가지 속성 정의
 enum GemType {
@@ -996,7 +997,9 @@ class PuzzleGame extends FlameGame {
 
 // UI 래퍼 위젯
 class PuzzleGameScreen extends StatefulWidget {
-  const PuzzleGameScreen({super.key});
+  final int? gravityDirection;
+
+  const PuzzleGameScreen({super.key, required this.gravityDirection});
 
   @override
   State<PuzzleGameScreen> createState() => _PuzzleGameScreenState();
@@ -1004,12 +1007,13 @@ class PuzzleGameScreen extends StatefulWidget {
 
 class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
   late PuzzleGame game;
-  int currentGravityDirection = 1;
 
   @override
   void initState() {
     super.initState();
     game = PuzzleGame();
+    // 전달받은 중력 방향으로 설정
+    game.setGravityDirection(widget.gravityDirection ?? 1);
   }
 
   @override
@@ -1019,65 +1023,16 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
 
     // 그리드 높이 계산 (화면의 40%)
     final gridHeight = width;
-    final battleAreaHeight = height - gridHeight - (height * 0.1);
+    final battleAreaHeight = height * 0.97 - gridHeight;
 
     return Column(
       children: [
         // 전투 영역
         SizedBox(
           height: battleAreaHeight,
-          child: Container(
-            color: Colors.white,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Battle Area',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-
-                // 중력 방향 설정
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('중력 방향: '),
-                    DropdownButton<int>(
-                      value: currentGravityDirection,
-                      items: const [
-                        DropdownMenuItem(value: 1, child: Text('아래 (1)')),
-                        DropdownMenuItem(value: 2, child: Text('왼쪽 (2)')),
-                        DropdownMenuItem(value: 3, child: Text('위 (3)')),
-                        DropdownMenuItem(value: 4, child: Text('오른쪽 (4)')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            currentGravityDirection = value;
-                          });
-                          game.setGravityDirection(value);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-
-                // 캐릭터 정보
-                Text(
-                  '캐릭터: ${game.characters.map((c) {
-                    try {
-                      final attrNames = c.attributes.isNotEmpty ? c.attributes.map((a) => a.name).join(", ") : "무속성";
-                      return "${c.name}($attrNames)";
-                    } catch (e) {
-                      return "${c.name}(오류)";
-                    }
-                  }).join(", ")}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
+          child: PuzzleBattleArea(
+            game: game,
+            gravityDirection: widget.gravityDirection,
           ),
         ),
 
