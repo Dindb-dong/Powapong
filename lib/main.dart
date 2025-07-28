@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'screens/inventory_screen.dart';
 import 'screens/shop_screen.dart';
 import 'screens/puzzle_screen.dart';
@@ -10,6 +11,14 @@ const Color kTabIcon = Color(0xFFE05EFF); // 분홍
 const Color kTabIconActive = Color(0xFFD100FF); // 진한 분홍
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 전체 화면 모드 설정 (안드로이드 네비게이션 바 숨김)
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.immersiveSticky,
+    overlays: [],
+  );
+
   runApp(const PowapongApp());
 }
 
@@ -56,6 +65,14 @@ class _MainScreenState extends State<MainScreen> {
     'lib/assets/icons/icon_pet.png',
   ];
 
+  static const List<String> _tabLabels = [
+    'Bag',
+    'Shop',
+    'Main',
+    'Friend',
+    'Character',
+  ];
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -69,15 +86,15 @@ class _MainScreenState extends State<MainScreen> {
       // 앱 전체 배경은 흰색, 하단 탭만 핑크
       body: _pages[_selectedIndex],
       bottomNavigationBar: SizedBox(
-        height: screenHeight * 0.1, // 화면 높이의 10%만 차지
+        height: screenHeight * 0.1,
         child: Container(
           color: kTabBg,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(_iconPaths.length, (index) {
               final isActive = _selectedIndex == index;
-              final double iconSize = isActive ? 64 : 48; // 아이콘 크기 증가
+              final double iconSize = isActive ? 40 : 32; // 아이콘 크기 더 줄임
               return GestureDetector(
                 onTap: () => _onItemTapped(index),
                 child: AnimatedContainer(
@@ -86,7 +103,7 @@ class _MainScreenState extends State<MainScreen> {
                   decoration: isActive
                       ? BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.10),
@@ -96,14 +113,31 @@ class _MainScreenState extends State<MainScreen> {
                           ],
                         )
                       : null,
-                  padding: const EdgeInsets.all(12),
-                  child: Image.asset(
-                    _iconPaths[index],
-                    width: iconSize,
-                    height: iconSize,
-                    color: isActive
-                        ? kTabIconActive
-                        : kTabIcon.withValues(alpha: 0.4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        _iconPaths[index],
+                        width: iconSize,
+                        height: iconSize,
+                        color: isActive
+                            ? kTabIconActive
+                            : kTabIcon.withValues(alpha: 0.4),
+                      ),
+                      Text(
+                        _tabLabels[index],
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: isActive ? kTabIconActive : kTabIcon,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );

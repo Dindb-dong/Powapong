@@ -58,6 +58,43 @@ class Character {
     : assert(attributes.isNotEmpty, '캐릭터는 최소 하나의 속성을 가져야 합니다.');
 }
 
+// 그리드 배경 컴포넌트 (Flame)
+class GridBackgroundComponent extends PositionComponent
+    with HasGameReference<PuzzleGame> {
+  final int gridX;
+  final int gridY;
+  Color backgroundColor = Colors.transparent;
+
+  GridBackgroundComponent({
+    required this.gridX,
+    required this.gridY,
+    required Vector2 position,
+    required Vector2 size,
+  }) : super(position: position, size: size);
+
+  @override
+  void render(Canvas canvas) {
+    if (backgroundColor != Colors.transparent) {
+      final paint = Paint()
+        ..color = backgroundColor
+        ..style = PaintingStyle.fill;
+
+      // 둥근 모서리로 그리기
+      final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+      final radius = Radius.circular(size.x * 0.1);
+      canvas.drawRRect(RRect.fromRectAndRadius(rect, radius), paint);
+    }
+  }
+
+  void setColor(Color color) {
+    backgroundColor = color;
+  }
+
+  void resetColor() {
+    backgroundColor = Colors.transparent;
+  }
+}
+
 // 젬 컴포넌트 (Flame)
 class GemComponent extends PositionComponent with HasGameReference<PuzzleGame> {
   final GemType type;
@@ -209,6 +246,7 @@ class GemComponent extends PositionComponent with HasGameReference<PuzzleGame> {
 class PuzzleGame extends FlameGame {
   static const int gridSize = 6;
   late List<List<GemComponent?>> grid;
+  late List<List<GridBackgroundComponent?>> gridBackgrounds;
   late Vector2 gemSize;
   late Vector2 gridOffset;
 
@@ -223,6 +261,13 @@ class PuzzleGame extends FlameGame {
   GemComponent? selectedGem;
   Vector2? dragStart;
   bool isProcessing = false;
+
+  // 미리보기 스왑 관련 변수들
+  GemComponent? previewGem1;
+  GemComponent? previewGem2;
+  Vector2? originalPos1;
+  Vector2? originalPos2;
+  bool isPreviewMode = false;
 
   @override
   Future<void> onLoad() async {
@@ -239,6 +284,17 @@ class PuzzleGame extends FlameGame {
 
     // 그리드 초기화
     grid = List.generate(gridSize, (y) => List.generate(gridSize, (x) => null));
+    gridBackgrounds = List.generate(
+      gridSize,
+      (y) => List.generate(gridSize, (x) => null as GridBackgroundComponent?),
+    );
+
+    // 그리드 배경 생성 및 배치
+    for (int y = 0; y < gridSize; y++) {
+      for (int x = 0; x < gridSize; x++) {
+        _createGridBackgroundAt(x, y);
+      }
+    }
 
     // 젬 생성 및 배치
     for (int y = 0; y < gridSize; y++) {
@@ -249,6 +305,20 @@ class PuzzleGame extends FlameGame {
 
     // 초기 매칭 검사
     _checkAndRemoveInitialMatches();
+  }
+
+  void _createGridBackgroundAt(int x, int y) {
+    final position = _gridToScreenPosition(x, y);
+
+    final background = GridBackgroundComponent(
+      gridX: x,
+      gridY: y,
+      position: position,
+      size: gemSize,
+    );
+
+    gridBackgrounds[y][x] = background;
+    add(background);
   }
 
   void _createGemAt(int x, int y) {
@@ -304,14 +374,32 @@ class PuzzleGame extends FlameGame {
 
   (int, int)? _screenToGridPosition(Vector2 screenPos) {
     final relativePos = screenPos - gridOffset;
+
+    // 젬의 전체 영역을 고려하여 그리드 좌표 계산
     final x = (relativePos.x / gemSize.x).floor();
     final y = (relativePos.y / gemSize.y).floor();
 
+    // 그리드 범위 체크
     if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
-      return (x, y);
-    } else {
-      return null;
+      // 젬이 실제로 존재하는지 확인
+      if (grid[y][x] != null) {
+        // 젬의 터치 영역 내에 있는지 확인 (젬 크기의 90% 영역)
+        final gemCenterX = (x + 0.5) * gemSize.x;
+        final gemCenterY = (y + 0.5) * gemSize.y;
+        final touchAreaRadius = gemSize.x * 0.45; // 젬 크기의 90% 영역
+
+        final distanceFromCenter = Vector2(
+          relativePos.x - gemCenterX,
+          relativePos.y - gemCenterY,
+        ).length;
+
+        if (distanceFromCenter <= touchAreaRadius) {
+          return (x, y);
+        }
+      }
     }
+
+    return null;
   }
 
   // 터치 이벤트 처리
@@ -334,9 +422,15 @@ class PuzzleGame extends FlameGame {
     final gridPos = _screenToGridPosition(position);
     if (gridPos != null) {
       final (x, y) = gridPos;
+      print(
+        '터치 위치: (${position.x.toStringAsFixed(1)}, ${position.y.toStringAsFixed(1)}) -> 그리드: ($x, $y)',
+      );
       selectedGem = grid[y][x];
       dragStart = position;
     } else {
+      print(
+        '터치 위치: (${position.x.toStringAsFixed(1)}, ${position.y.toStringAsFixed(1)}) -> 유효하지 않은 영역',
+      );
       selectedGem = null;
     }
   }
@@ -348,21 +442,34 @@ class PuzzleGame extends FlameGame {
 
     final delta = position - dragStart!;
 
-    // 드래그 감지 임계값을 더 작게 설정 (젬 크기의 20%로)
-    if (delta.length > gemSize.x * 0.2) {
-      _handleSwipe(delta);
-      dragStart = null;
-      selectedGem = null;
+    // 드래그 감지 임계값 (젬 크기의 30%로 증가)
+    if (delta.length > gemSize.x * 0.3) {
+      _handlePreviewSwipe(delta);
+    } else {
+      // 임계값보다 작으면 미리보기 취소
+      _cancelPreview();
     }
   }
 
   void onDragEnd() {
-    selectedGem = null;
-    dragStart = null;
+    if (isPreviewMode) {
+      // 미리보기 모드에서 손을 놓으면 실제 스왑 실행
+      _executePreviewSwap();
+    } else {
+      // 미리보기 모드가 아니면 그냥 리셋
+      _resetDragState();
+    }
   }
 
-  void _handleSwipe(Vector2 delta) {
-    if (selectedGem == null) return;
+  void _resetDragState() {
+    selectedGem = null;
+    dragStart = null;
+    isPreviewMode = false;
+  }
+
+  // 미리보기 스왑 처리
+  void _handlePreviewSwipe(Vector2 delta) {
+    if (selectedGem == null || isPreviewMode) return;
 
     final (fromX, fromY) = (selectedGem!.gridX, selectedGem!.gridY);
     int toX = fromX;
@@ -378,40 +485,183 @@ class PuzzleGame extends FlameGame {
     // 범위 체크
     if (toX < 0 || toX >= gridSize || toY < 0 || toY >= gridSize) return;
 
-    _swapGems(fromX, fromY, toX, toY);
+    // 미리보기 스왑 시작
+    _startPreviewSwap(fromX, fromY, toX, toY);
   }
 
-  void _swapGems(int fromX, int fromY, int toX, int toY) {
-    if (isProcessing) return;
+  // 미리보기 스왑 시작
+  void _startPreviewSwap(int fromX, int fromY, int toX, int toY) {
+    if (isPreviewMode) return;
 
     final gem1 = grid[fromY][fromX];
     final gem2 = grid[toY][toX];
 
     if (gem1 == null || gem2 == null) return;
 
-    // 스왑 시작 시 처리 상태로 설정
-    isProcessing = true;
+    isPreviewMode = true;
+    previewGem1 = gem1;
+    previewGem2 = gem2;
+    originalPos1 = _gridToScreenPosition(fromX, fromY);
+    originalPos2 = _gridToScreenPosition(toX, toY);
 
-    // 스왑 애니메이션
-    final pos1 = _gridToScreenPosition(fromX, fromY);
-    final pos2 = _gridToScreenPosition(toX, toY);
+    // 그리드 배경 색상 설정
+    _setGridBackgroundColors(fromX, fromY, toX, toY);
 
-    gem1.moveTo(pos2);
-    gem2.moveTo(pos1);
+    // 미리보기 애니메이션 (빠른 속도로)
+    final pos1 = _gridToScreenPosition(toX, toY);
+    final pos2 = _gridToScreenPosition(fromX, fromY);
+
+    gem1.moveTo(pos1, duration: 0.15);
+    gem2.moveTo(pos2, duration: 0.15);
+
+    print('미리보기 스왑 시작: ($fromX, $fromY) ↔ ($toX, $toY)');
+  }
+
+  // 그리드 배경 색상 설정
+  void _setGridBackgroundColors(int fromX, int fromY, int toX, int toY) {
+    // 모든 배경 색상 리셋
+    _resetAllGridBackgroundColors();
+
+    // 선택된 젬 위치 (은은한 노란색)
+    if (gridBackgrounds[fromY][fromX] != null) {
+      gridBackgrounds[fromY][fromX]!.setColor(
+        const Color(0x33FFD700),
+      ); // 은은한 노란색
+    }
+
+    // 스왑 대상 젬 위치 (은은한 녹색)
+    if (gridBackgrounds[toY][toX] != null) {
+      gridBackgrounds[toY][toX]!.setColor(const Color(0x3390EE90)); // 은은한 녹색
+    }
+  }
+
+  // 모든 그리드 배경 색상 리셋
+  void _resetAllGridBackgroundColors() {
+    for (int y = 0; y < gridSize; y++) {
+      for (int x = 0; x < gridSize; x++) {
+        if (gridBackgrounds[y][x] != null) {
+          gridBackgrounds[y][x]!.resetColor();
+        }
+      }
+    }
+  }
+
+  // 미리보기 취소
+  void _cancelPreview() {
+    if (!isPreviewMode) return;
+
+    // 원래 위치로 되돌리기
+    if (previewGem1 != null && originalPos1 != null) {
+      previewGem1!.moveTo(originalPos1!, duration: 0.15);
+    }
+    if (previewGem2 != null && originalPos2 != null) {
+      previewGem2!.moveTo(originalPos2!, duration: 0.15);
+    }
+
+    // 그리드 배경 색상 리셋
+    _resetAllGridBackgroundColors();
+
+    // 미리보기 상태 리셋
+    isPreviewMode = false;
+    previewGem1 = null;
+    previewGem2 = null;
+    originalPos1 = null;
+    originalPos2 = null;
+
+    print('미리보기 스왑 취소');
+  }
+
+  // 미리보기 스왑 실행
+  void _executePreviewSwap() {
+    if (!isPreviewMode || previewGem1 == null || previewGem2 == null) {
+      _resetDragState();
+      return;
+    }
+
+    // 실제 스왑 실행
+    final fromX = previewGem1!.gridX;
+    final fromY = previewGem1!.gridY;
+    final toX = previewGem2!.gridX;
+    final toY = previewGem2!.gridY;
 
     // 그리드 업데이트
-    grid[fromY][fromX] = gem2;
-    grid[toY][toX] = gem1;
-    gem1.gridX = toX;
-    gem1.gridY = toY;
-    gem2.gridX = fromX;
-    gem2.gridY = fromY;
+    grid[fromY][fromX] = previewGem2;
+    grid[toY][toX] = previewGem1;
+    previewGem1!.gridX = toX;
+    previewGem1!.gridY = toY;
+    previewGem2!.gridX = fromX;
+    previewGem2!.gridY = fromY;
 
-    // 매칭 검사 (지연 시간 증가)
-    Future.delayed(const Duration(milliseconds: 500), () {
+    print('실제 스왑 실행: ($fromX, $fromY) ↔ ($toX, $toY)');
+
+    // 그리드 배경 색상 리셋
+    _resetAllGridBackgroundColors();
+
+    // 미리보기 상태 리셋
+    isPreviewMode = false;
+    previewGem1 = null;
+    previewGem2 = null;
+    originalPos1 = null;
+    originalPos2 = null;
+
+    // 매칭 검사
+    Future.delayed(const Duration(milliseconds: 300), () {
       _checkAndProcessMatches();
     });
   }
+
+  // 기존 스왑 함수 (미리보기 모드로 대체됨)
+  // void _handleSwipe(Vector2 delta) {
+  //   if (selectedGem == null) return;
+
+  //   final (fromX, fromY) = (selectedGem!.gridX, selectedGem!.gridY);
+  //   int toX = fromX;
+  //   int toY = fromY;
+
+  //   // 스와이프 방향 결정
+  //   if (delta.x.abs() > delta.y.abs()) {
+  //     toX = fromX + (delta.x > 0 ? 1 : -1);
+  //   } else {
+  //     toY = fromY + (delta.y > 0 ? 1 : -1);
+  //   }
+
+  //   // 범위 체크
+  //   if (toX < 0 || toX >= gridSize || toY < 0 || toY >= gridSize) return;
+
+  //   _swapGems(fromX, fromY, toX, toY);
+  // }
+
+  // void _swapGems(int fromX, int fromY, int toX, int toY) {
+  //   if (isProcessing) return;
+
+  //   final gem1 = grid[fromY][fromX];
+  //   final gem2 = grid[toY][toX];
+
+  //   if (gem1 == null || gem2 == null) return;
+
+  //   // 스왑 시작 시 처리 상태로 설정
+  //   isProcessing = true;
+
+  //   // 스왑 애니메이션
+  //   final pos1 = _gridToScreenPosition(fromX, fromY);
+  //   final pos2 = _gridToScreenPosition(toX, toY);
+
+  //   gem1.moveTo(pos2);
+  //   gem2.moveTo(pos1);
+
+  //   // 그리드 업데이트
+  //   grid[fromY][fromX] = gem2;
+  //   grid[toY][toX] = gem1;
+  //   gem1.gridX = toX;
+  //   gem1.gridY = toY;
+  //   gem2.gridX = fromX;
+  //   gem2.gridY = fromY;
+
+  //   // 매칭 검사 (지연 시간 증가)
+  //   Future.delayed(const Duration(milliseconds: 500), () {
+  //     _checkAndProcessMatches();
+  //   });
+  // }
 
   void _checkAndProcessMatches() {
     final matches = _findMatches();
