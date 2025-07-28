@@ -5,10 +5,7 @@ import 'screens/shop_screen.dart';
 import 'screens/puzzle_screen.dart';
 import 'screens/friend_screen.dart';
 import 'screens/pet_screen.dart';
-
-const Color kTabBg = Color(0xFFFFD1F7); // 연분홍
-const Color kTabIcon = Color(0xFFE05EFF); // 분홍
-const Color kTabIconActive = Color(0xFFD100FF); // 진한 분홍
+import 'widgets/bottom_navigation.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,22 +54,6 @@ class _MainScreenState extends State<MainScreen> {
     const PetScreen(),
   ];
 
-  static const List<String> _iconPaths = [
-    'lib/assets/icons/icon_inventory.png',
-    'lib/assets/icons/icon_shop.png',
-    'lib/assets/icons/icon_puzzle.png',
-    'lib/assets/icons/icon_friend.png',
-    'lib/assets/icons/icon_pet.png',
-  ];
-
-  static const List<String> _tabLabels = [
-    'Bag',
-    'Shop',
-    'Main',
-    'Friend',
-    'Character',
-  ];
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -81,69 +62,12 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       // 앱 전체 배경은 흰색, 하단 탭만 핑크
       body: _pages[_selectedIndex],
-      bottomNavigationBar: SizedBox(
-        height: screenHeight * 0.1,
-        child: Container(
-          color: kTabBg,
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(_iconPaths.length, (index) {
-              final isActive = _selectedIndex == index;
-              final double iconSize = isActive ? 40 : 32; // 아이콘 크기 더 줄임
-              return GestureDetector(
-                onTap: () => _onItemTapped(index),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.ease,
-                  decoration: isActive
-                      ? BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.10),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        )
-                      : null,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        _iconPaths[index],
-                        width: iconSize,
-                        height: iconSize,
-                        color: isActive
-                            ? kTabIconActive
-                            : kTabIcon.withValues(alpha: 0.4),
-                      ),
-                      Text(
-                        _tabLabels[index],
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: isActive ? kTabIconActive : kTabIcon,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
+      bottomNavigationBar: BottomNavigation(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }
