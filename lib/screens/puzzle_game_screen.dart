@@ -197,7 +197,7 @@ class GemComponent extends PositionComponent with HasGameReference<PuzzleGame> {
     }
   }
 
-  void moveTo(Vector2 newPosition, {double duration = 0.3}) {
+  void moveTo(Vector2 newPosition, {double duration = 0.2}) {
     isMoving = true;
     targetPosition = newPosition;
 
@@ -236,7 +236,7 @@ class GemComponent extends PositionComponent with HasGameReference<PuzzleGame> {
     add(
       ScaleEffect.to(
         Vector2.zero(),
-        EffectController(duration: 0.2),
+        EffectController(duration: 0.15),
         onComplete: () => removeFromParent(),
       ),
     );
@@ -512,8 +512,8 @@ class PuzzleGame extends FlameGame {
     final pos1 = _gridToScreenPosition(toX, toY);
     final pos2 = _gridToScreenPosition(fromX, fromY);
 
-    gem1.moveTo(pos1, duration: 0.15);
-    gem2.moveTo(pos2, duration: 0.15);
+    gem1.moveTo(pos1, duration: 0.1);
+    gem2.moveTo(pos2, duration: 0.1);
 
     print('미리보기 스왑 시작: ($fromX, $fromY) ↔ ($toX, $toY)');
   }
@@ -553,10 +553,10 @@ class PuzzleGame extends FlameGame {
 
     // 원래 위치로 되돌리기
     if (previewGem1 != null && originalPos1 != null) {
-      previewGem1!.moveTo(originalPos1!, duration: 0.15);
+      previewGem1!.moveTo(originalPos1!, duration: 0.1);
     }
     if (previewGem2 != null && originalPos2 != null) {
-      previewGem2!.moveTo(originalPos2!, duration: 0.15);
+      previewGem2!.moveTo(originalPos2!, duration: 0.1);
     }
 
     // 그리드 배경 색상 리셋
@@ -606,7 +606,7 @@ class PuzzleGame extends FlameGame {
     originalPos2 = null;
 
     // 매칭 검사
-    Future.delayed(const Duration(milliseconds: 300), () {
+    Future.delayed(const Duration(milliseconds: 200), () {
       _checkAndProcessMatches();
     });
   }
@@ -748,7 +748,7 @@ class PuzzleGame extends FlameGame {
     print('매칭된 젬들 제거 완료, 중력 적용 시작');
 
     // 중력 적용 및 새 젬 생성 (연쇄 반응을 위해 재귀 호출)
-    Future.delayed(const Duration(milliseconds: 600), () {
+    Future.delayed(const Duration(milliseconds: 400), () {
       _applyGravity();
     });
   }
@@ -819,7 +819,7 @@ class PuzzleGame extends FlameGame {
 
     // 기존 젬들이 이동한 후 새 젬 생성 (딜레이 추가)
     if (hasChanges) {
-      Future.delayed(const Duration(milliseconds: 400), () {
+      Future.delayed(const Duration(milliseconds: 250), () {
         print('새 젬 생성 시작');
         for (int x = 0; x < gridSize; x++) {
           for (int y = 0; y < gridSize; y++) {
@@ -830,7 +830,7 @@ class PuzzleGame extends FlameGame {
         }
         print('새 젬 생성 완료, 매칭 검사 시작');
         // 새 젬 생성 후 매칭 검사
-        Future.delayed(const Duration(milliseconds: 300), () {
+        Future.delayed(const Duration(milliseconds: 200), () {
           _checkAndProcessMatchesRecursively();
         });
       });
@@ -866,7 +866,7 @@ class PuzzleGame extends FlameGame {
 
     // 기존 젬들이 이동한 후 새 젬 생성 (딜레이 추가)
     if (hasChanges) {
-      Future.delayed(const Duration(milliseconds: 400), () {
+      Future.delayed(const Duration(milliseconds: 250), () {
         print('새 젬 생성 시작 (Left)');
         for (int y = 0; y < gridSize; y++) {
           for (int x = gridSize - 1; x >= 0; x--) {
@@ -877,7 +877,7 @@ class PuzzleGame extends FlameGame {
         }
         print('새 젬 생성 완료 (Left), 매칭 검사 시작');
         // 새 젬 생성 후 매칭 검사
-        Future.delayed(const Duration(milliseconds: 300), () {
+        Future.delayed(const Duration(milliseconds: 200), () {
           _checkAndProcessMatchesRecursively();
         });
       });
@@ -913,7 +913,7 @@ class PuzzleGame extends FlameGame {
 
     // 기존 젬들이 이동한 후 새 젬 생성 (딜레이 추가)
     if (hasChanges) {
-      Future.delayed(const Duration(milliseconds: 400), () {
+      Future.delayed(const Duration(milliseconds: 250), () {
         print('새 젬 생성 시작 (Up)');
         for (int x = 0; x < gridSize; x++) {
           for (int y = gridSize - 1; y >= 0; y--) {
@@ -924,7 +924,7 @@ class PuzzleGame extends FlameGame {
         }
         print('새 젬 생성 완료 (Up), 매칭 검사 시작');
         // 새 젬 생성 후 매칭 검사
-        Future.delayed(const Duration(milliseconds: 300), () {
+        Future.delayed(const Duration(milliseconds: 200), () {
           _checkAndProcessMatchesRecursively();
         });
       });
@@ -960,7 +960,7 @@ class PuzzleGame extends FlameGame {
 
     // 기존 젬들이 이동한 후 새 젬 생성 (딜레이 추가)
     if (hasChanges) {
-      Future.delayed(const Duration(milliseconds: 400), () {
+      Future.delayed(const Duration(milliseconds: 250), () {
         print('새 젬 생성 시작 (Right)');
         for (int y = 0; y < gridSize; y++) {
           for (int x = 0; x < gridSize; x++) {
@@ -971,7 +971,7 @@ class PuzzleGame extends FlameGame {
         }
         print('새 젬 생성 완료 (Right), 매칭 검사 시작');
         // 새 젬 생성 후 매칭 검사
-        Future.delayed(const Duration(milliseconds: 300), () {
+        Future.delayed(const Duration(milliseconds: 200), () {
           _checkAndProcessMatchesRecursively();
         });
       });
