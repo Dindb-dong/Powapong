@@ -4,7 +4,9 @@ import 'package:flame/components.dart';
 import 'package:flame/particles.dart';
 import 'package:flame/effects.dart';
 import 'dart:math';
+import 'dart:async';
 import '../widgets/puzzle_battle_area.dart';
+import '../widgets/game_result_modal.dart';
 
 // 12가지 속성 정의
 enum GemType {
@@ -270,10 +272,87 @@ class PuzzleGame extends FlameGame {
   Vector2? originalPos2;
   bool isPreviewMode = false;
 
+  // 타이머 및 스코어 관련 변수들
+  Timer? gameTimer;
+  Timer? uiUpdateTimer;
+  int remainingTime = 60; // 1분 = 60초
+  int totalScore = 0;
+  bool isGameOver = false;
+  Function(int score)? onGameOver;
+
+  // 스코어 계산을 위한 가중치 (나중에 캐릭터/무기 레벨에 따라 조정)
+  double characterLevelMultiplier = 1.0;
+  double weaponLevelMultiplier = 1.0;
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     _initializeGrid();
+    _startGameTimer();
+  }
+
+  void _startGameTimer() {
+    gameTimer = Timer(
+      1.0,
+      onTick: () {
+        remainingTime--;
+        if (remainingTime <= 0) {
+          _endGame();
+        }
+      },
+      repeat: true,
+    );
+  }
+
+  void _endGame() {
+    isGameOver = true;
+    gameTimer?.stop();
+    uiUpdateTimer?.stop();
+    if (onGameOver != null) {
+      onGameOver!(totalScore);
+    }
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    gameTimer?.update(dt);
+    uiUpdateTimer?.update(dt);
+  }
+
+  // 스코어 계산 함수
+  void _addScore(int matchLength) {
+    int baseScore = 0;
+    switch (matchLength) {
+      case 3:
+        baseScore = 100;
+        break;
+      case 4:
+        baseScore = 150;
+        break;
+      case 5:
+        baseScore = 300;
+        break;
+      default:
+        baseScore = matchLength * 50; // 5개 이상일 경우
+    }
+
+    // 캐릭터 레벨과 무기 레벨 가중치 적용
+    final finalScore =
+        (baseScore * characterLevelMultiplier * weaponLevelMultiplier).round();
+    totalScore += finalScore;
+
+    print('스코어 추가: $matchLength개 매칭 = $baseScore점 (가중치 적용: $finalScore점)');
+  }
+
+  // 캐릭터 레벨 가중치 설정
+  void setCharacterLevelMultiplier(double multiplier) {
+    characterLevelMultiplier = multiplier;
+  }
+
+  // 무기 레벨 가중치 설정
+  void setWeaponLevelMultiplier(double multiplier) {
+    weaponLevelMultiplier = multiplier;
   }
 
   void _initializeGrid() {
@@ -387,7 +466,7 @@ class PuzzleGame extends FlameGame {
         // 젬의 터치 영역 내에 있는지 확인 (젬 크기의 90% 영역)
         final gemCenterX = (x + 0.5) * gemSize.x;
         final gemCenterY = (y + 0.5) * gemSize.y;
-        final touchAreaRadius = gemSize.x * 0.45; // 젬 크기의 90% 영역
+        final touchAreaRadius = gemSize.x * 0.5; // 젬 크기의 100% 영역
 
         final distanceFromCenter = Vector2(
           relativePos.x - gemCenterX,
@@ -643,7 +722,7 @@ class PuzzleGame extends FlameGame {
   //   // 스왑 시작 시 처리 상태로 설정
   //   isProcessing = true;
 
-  //   // 스왑 애니메이션
+  //   // 스와이프 애니메이션
   //   final pos1 = _gridToScreenPosition(fromX, fromY);
   //   final pos2 = _gridToScreenPosition(toX, toY);
 
@@ -699,7 +778,17 @@ class PuzzleGame extends FlameGame {
             gem3 != null &&
             gem1.type == gem2.type &&
             gem2.type == gem3.type) {
-          matches.add([(x, y), (x + 1, y), (x + 2, y)]);
+          // 3개 이상 매칭 찾기
+          int matchLength = 3;
+          for (int i = 3; x + i < gridSize; i++) {
+            final nextGem = grid[y][x + i];
+            if (nextGem != null && nextGem.type == gem1.type) {
+              matchLength++;
+            } else {
+              break;
+            }
+          }
+          matches.add(List.generate(matchLength, (i) => (x + i, y)));
         }
       }
     }
@@ -716,26 +805,41 @@ class PuzzleGame extends FlameGame {
             gem3 != null &&
             gem1.type == gem2.type &&
             gem2.type == gem3.type) {
-          matches.add([(x, y), (x, y + 1), (x, y + 2)]);
+          // 3개 이상 매칭 찾기
+          int matchLength = 3;
+          for (int i = 3; y + i < gridSize; i++) {
+            final nextGem = grid[y + i][x];
+            if (nextGem != null && nextGem.type == gem1.type) {
+              matchLength++;
+            } else {
+              break;
+            }
+          }
+          matches.add(List.generate(matchLength, (i) => (x, y + i)));
         }
       }
     }
 
     print('매칭 검사 완료: ${matches.length}개 매칭');
-
     return matches;
   }
 
   void _processMatches(List<List<(int, int)>> matches) {
     print('매칭 처리 시작: ${matches.length}개 매칭');
 
-    // 매칭된 젬들 제거
+    // 매칭된 젬들 제거 및 스코어 계산
     Set<(int, int)> positionsToRemove = {};
     for (var match in matches) {
       for (var pos in match) {
         positionsToRemove.add(pos);
       }
     }
+
+    // 실제 제거될 젬의 개수로 스코어 계산
+    final uniqueMatchCount = positionsToRemove.length;
+    _addScore(uniqueMatchCount);
+
+    print('매칭된 젬 개수: $uniqueMatchCount개');
 
     for (var (x, y) in positionsToRemove) {
       final gem = grid[y][x];
@@ -745,7 +849,7 @@ class PuzzleGame extends FlameGame {
       }
     }
 
-    print('매칭된 젬들 제거 완료, 중력 적용 시작');
+    //print('매칭된 젬들 제거 완료, 중력 적용 시작');
 
     // 중력 적용 및 새 젬 생성 (연쇄 반응을 위해 재귀 호출)
     Future.delayed(const Duration(milliseconds: 400), () {
@@ -794,22 +898,22 @@ class PuzzleGame extends FlameGame {
 
   bool _applyGravityDown() {
     bool hasChanges = false;
-    print('중력 적용 시작: Down');
+    //print('중력 적용 시작: Down');
     for (int x = 0; x < gridSize; x++) {
-      print('($x+1) 열에서 중력 적용 시작');
+      //print('($x+1) 열에서 중력 적용 시작');
       for (int y = gridSize - 1; y >= 0; y--) {
         if (grid[y][x] == null) {
           hasChanges = true;
           // 위에서 젬 찾아서 아래로 이동
           for (int aboveY = y - 1; aboveY >= 0; aboveY--) {
-            print('($x+1) 열의 ($y+1) 행에서 위에서 젬 찾아서 아래로 이동');
+            // print('($x+1) 열의 ($y+1) 행에서 위에서 젬 찾아서 아래로 이동');
             if (grid[aboveY][x] != null) {
               final gem = grid[aboveY][x]!;
               grid[aboveY][x] = null;
               grid[y][x] = gem;
               gem.gridY = y;
               gem.moveTo(_gridToScreenPosition(x, y));
-              print('($x+1) 열의 ($y+1) 행에서 위에서 젬 찾아서 아래로 이동 완료');
+              //print('($x+1) 열의 ($y+1) 행에서 위에서 젬 찾아서 아래로 이동 완료');
               break;
             }
           }
@@ -841,15 +945,15 @@ class PuzzleGame extends FlameGame {
 
   bool _applyGravityLeft() {
     bool hasChanges = false;
-    print('중력 적용 시작: Left');
+    //print('중력 적용 시작: Left');
     for (int y = 0; y < gridSize; y++) {
-      print('($y+1) 행에서 중력 적용 시작');
+      //print('($y+1) 행에서 중력 적용 시작');
       for (int x = 0; x < gridSize; x++) {
         if (grid[y][x] == null) {
           hasChanges = true;
           // 오른쪽에서 젬 찾아서 왼쪽으로 이동
           for (int rightX = x + 1; rightX < gridSize; rightX++) {
-            print('($y+1) 행의 ($x+1) 열에서 오른쪽에서 젬 찾아서 왼쪽으로 이동');
+            //print('($y+1) 행의 ($x+1) 열에서 오른쪽에서 젬 찾아서 왼쪽으로 이동');
             if (grid[y][rightX] != null) {
               final gem = grid[y][rightX]!;
               grid[y][rightX] = null;
@@ -888,22 +992,22 @@ class PuzzleGame extends FlameGame {
 
   bool _applyGravityUp() {
     bool hasChanges = false;
-    print('중력 적용 시작: Up');
+    //print('중력 적용 시작: Up');
     for (int x = 0; x < gridSize; x++) {
-      print('($x+1) 열에서 중력 적용 시작');
+      //print('($x+1) 열에서 중력 적용 시작');
       for (int y = 0; y < gridSize; y++) {
         if (grid[y][x] == null) {
           hasChanges = true;
           // 아래에서 젬 찾아서 위로 이동
           for (int belowY = y + 1; belowY < gridSize; belowY++) {
-            print('($x+1) 열의 ($y+1) 행에서 아래에서 젬 찾아서 위로 이동');
+            //print('($x+1) 열의 ($y+1) 행에서 아래에서 젬 찾아서 위로 이동');
             if (grid[belowY][x] != null) {
               final gem = grid[belowY][x]!;
               grid[belowY][x] = null;
               grid[y][x] = gem;
               gem.gridY = y;
               gem.moveTo(_gridToScreenPosition(x, y));
-              print('($x+1) 열의 ($y+1) 행에서 아래에서 젬 찾아서 위로 이동 완료');
+              //print('($x+1) 열의 ($y+1) 행에서 아래에서 젬 찾아서 위로 이동 완료');
               break;
             }
           }
@@ -935,22 +1039,22 @@ class PuzzleGame extends FlameGame {
 
   bool _applyGravityRight() {
     bool hasChanges = false;
-    print('중력 적용 시작: Right');
+    //print('중력 적용 시작: Right');
     for (int y = 0; y < gridSize; y++) {
-      print('($y+1) 행에서 중력 적용 시작');
+      //print('($y+1) 행에서 중력 적용 시작');
       for (int x = gridSize - 1; x >= 0; x--) {
         if (grid[y][x] == null) {
           hasChanges = true;
           // 왼쪽에서 젬 찾아서 오른쪽으로 이동
           for (int leftX = x - 1; leftX >= 0; leftX--) {
-            print('($y+1) 행의 ($x+1) 열에서 왼쪽에서 젬 찾아서 오른쪽으로 이동');
+            //print('($y+1) 행의 ($x+1) 열에서 왼쪽에서 젬 찾아서 오른쪽으로 이동');
             if (grid[y][leftX] != null) {
               final gem = grid[y][leftX]!;
               grid[y][leftX] = null;
               grid[y][x] = gem;
               gem.gridX = x;
               gem.moveTo(_gridToScreenPosition(x, y));
-              print('($y+1) 행의 ($x+1) 열에서 왼쪽에서 젬 찾아서 오른쪽으로 이동 완료');
+              //print('($y+1) 행의 ($x+1) 열에서 왼쪽에서 젬 찾아서 오른쪽으로 이동 완료');
               break;
             }
           }
@@ -1007,6 +1111,8 @@ class PuzzleGameScreen extends StatefulWidget {
 
 class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
   late PuzzleGame game;
+  int remainingTime = 60;
+  int totalScore = 0;
 
   @override
   void initState() {
@@ -1014,6 +1120,44 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
     game = PuzzleGame();
     // 전달받은 중력 방향으로 설정
     game.setGravityDirection(widget.gravityDirection ?? 1);
+
+    // 게임 오버 콜백 설정
+    game.onGameOver = (score) {
+      setState(() {
+        totalScore = score;
+      });
+      _showGameResultModal();
+    };
+
+    // UI 업데이트를 위한 타이머
+    game.uiUpdateTimer = Timer(
+      1.0,
+      onTick: () {
+        if (mounted && !game.isGameOver) {
+          setState(() {
+            remainingTime = game.remainingTime;
+            totalScore = game.totalScore;
+          });
+        }
+      },
+      repeat: true,
+    );
+  }
+
+  void _showGameResultModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return GameResultModal(
+          score: totalScore,
+          onConfirm: () {
+            Navigator.of(context).pop(); // 모달 닫기
+            Navigator.of(context).pop(); // 게임 화면 나가기
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -1021,24 +1165,74 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
     final height = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
 
-    // 그리드 높이 계산 (화면의 40%)
-    final gridHeight = width;
-    final battleAreaHeight = height * 0.97 - gridHeight;
+    // 화면 분할 계산
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    final availableHeight = height - statusBarHeight;
+
+    // 타이머/스코어 영역 (고정 높이)
+    const statusHeight = 80.0;
+    // 퍼즐 영역 (화면 너비만큼 정사각형)
+    final puzzleHeight = width;
+    // 전투 영역 (남은 공간)
+    final battleHeight = availableHeight - statusHeight - puzzleHeight;
 
     return Column(
       children: [
-        // 전투 영역
+        // 타이머와 스코어 표시 (맨 위)
+        Container(
+          height: statusHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.black87,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // 타이머
+              Row(
+                children: [
+                  const Icon(Icons.timer, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${remainingTime ~/ 60}:${(remainingTime % 60).toString().padLeft(2, '0')}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+
+              // 스코어
+              Row(
+                children: [
+                  const Icon(Icons.star, color: Colors.yellow, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$totalScore',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // 전투 영역 (중간)
         SizedBox(
-          height: battleAreaHeight,
+          height: battleHeight,
           child: PuzzleBattleArea(
             game: game,
             gravityDirection: widget.gravityDirection,
           ),
         ),
 
-        // 퍼즐 게임 영역
+        // 퍼즐 게임 영역 (맨 아래)
         SizedBox(
-          height: gridHeight,
+          height: puzzleHeight,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapDown: (details) {
